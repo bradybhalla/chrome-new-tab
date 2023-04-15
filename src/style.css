@@ -19,20 +19,31 @@ body {
 #search-box {
   position: relative;
   display: flex;
-  justify-content: center;
 }
 
 #search {
   width: 100%;
   padding: 10px;
+  padding-left: 40px;
   border-radius: 5px;
   font-size: 24px;
   background: lightgray;
+  color: #222222;
   border: none;
   outline: none;
-  font-family: "Courier New", monospace;
+  font-family: "Courier", monospace;
 }
 
 #search:focus {
-  box-shadow: inset 0px 0px 4px rgba(0, 0, 0, 0.5), 0 0 4px rgba(0, 0, 0, 0.2);;
+  box-shadow: inset 0px 0px 8px rgba(0, 0, 0, 0.5), 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+.icon {
+  position: absolute;
+  width: 40px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
