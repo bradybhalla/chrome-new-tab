@@ -1,0 +1,15 @@
+{
+  "name": "chrome-new-tab",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && cp manifest.json dist/",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.3",
+    "vite": "^4.1.0"
+  }
+}
