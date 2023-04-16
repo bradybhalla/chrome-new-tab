@@ -57,10 +57,10 @@ export default class SandManager {
     this.sandExists = true;
   }
 
-  addAt({row, col}: {row: number, col: number}){
-    for (let r = row-1; r <= row+1; r++) {
-      for (let c = col-1; c <= col+1; c++) {
-        if (!this.isSand(r,c) && Math.random() < 0.5){
+  addAt({ row, col }: { row: number, col: number; }) {
+    for (let r = row - 1; r <= row + 1; r++) {
+      for (let c = col - 1; c <= col + 1; c++) {
+        if (!this.isSand(r, c) && Math.random() < 0.5) {
           this.sands[r][c] = true;
         }
       }
@@ -68,10 +68,10 @@ export default class SandManager {
     this.sandExists = true;
   }
 
-  addInColRange(row: number, colStart: number, colEnd: number){
-    for (let r = row; r < row+10; r++) {
+  addInColRange(row: number, colStart: number, colEnd: number) {
+    for (let r = row; r < row + 10; r++) {
       for (let c = colStart; c <= colEnd; c++) {
-        if (!this.isSand(r,c) && Math.random() < 1-(r-row)*0.1){
+        if (!this.isSand(r, c) && Math.random() < 1 - (r - row) * 0.1) {
           this.sands[r][c] = true;
         }
       }
@@ -82,7 +82,7 @@ export default class SandManager {
   removeSome() {
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
-        if (Math.random() < 0.3){
+        if (Math.random() < 0.3) {
           this.sands[r][c] = false;
         }
       }
