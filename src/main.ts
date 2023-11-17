@@ -7,7 +7,7 @@ type Rect = {
   left: number,
   top: number,
   width: number,
-  height: number;
+  height: number
 };
 
 class MainSketch extends Sketch {
@@ -51,7 +51,7 @@ class MainSketch extends Sketch {
     this.canvas.height = window.innerHeight;
     this.setSearchBoxPos();
 
-    this.sandSize = Math.max(7, Math.floor(Math.max(this.canvas.width, this.canvas.height) / 200));
+    this.sandSize = Math.max(Math.floor(this.canvas.height / 100), 7);
     this.sand = new SandManager(Math.floor(this.canvas.height / this.sandSize + 0.5), Math.floor(this.canvas.width / this.sandSize + 0.5));
   }
   override draw(): void {
@@ -99,6 +99,7 @@ class MainSketch extends Sketch {
     }
 
     this.sand?.update();
+    this.sand?.update();
   }
   override createEventListeners(): void {
 
@@ -117,7 +118,7 @@ class MainSketch extends Sketch {
       this.canvas.height = window.innerHeight;
       this.mouse.visible = false;
       this.setSearchBoxPos();
-      this.sandSize = Math.max(7, Math.floor(Math.max(this.canvas.width, this.canvas.height) / 200));
+      this.sandSize = Math.max(Math.floor(this.canvas.height / 100), 7);
       this.sand?.extend(Math.floor(this.canvas.height / this.sandSize + 0.5), Math.floor(this.canvas.width / this.sandSize + 0.5));
       this.draw();
     });

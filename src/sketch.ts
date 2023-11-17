@@ -1,10 +1,14 @@
 export default abstract class Sketch {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
+  fps: number;
+  _lastFrame: number;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.ctx = this.canvas.getContext("2d")!;
+    this.fps = 60;
+    this._lastFrame = 0;
   }
 
   /**
@@ -35,7 +39,11 @@ export default abstract class Sketch {
     this.createEventListeners();
     const drawFunc = () => {
       requestAnimationFrame(drawFunc);
-      this.update();
+      const curTime = Date.now();
+      if (curTime >= this._lastFrame + 1000/this.fps){
+          this.update();
+          this._lastFrame = curTime;
+      }
       this.draw();
     };
     drawFunc();
