@@ -1,24 +1,25 @@
 CC=emcc
 
-FLAGS=-s USE_SDL=2
-DEBUG_FLAGS=-fsanitize=address -gsource-map
-RELEASE_FLAGS=#-O2
+FLAGS=--use-port=sdl2
 
-OUTPUT=build/main.js
-SRC=$(wildcard src/*)
+OUTPUT_FILE=build/main.js
+SRC=$(wildcard src/*.cpp)
 
-$(OUTPUT): $(SRC)
-	@mkdir -p $(shell dirname $(OUTPUT))
-	$(CC) $(FLAGS) -o $(OUTPUT) $(SRC)
+.PHONY: all
+all: build compile_flags.txt
 
-debug: FLAGS += $(DEBUG_FLAGS)
-debug: $(OUTPUT)
-
-release: FLAGS += $(RELEASE_FLAGS)
-release: $(OUTPUT)
+.PHONY: build
+build: $(SRC)
+	@mkdir -p $(shell dirname $(OUTPUT_FILE))
+	$(CC) $(FLAGS) -o $(OUTPUT_FILE) $(SRC)
 
 compile_flags.txt:
 	$(CC) $(FLAGS) --cflags | sed 's/ /\n/g' > compile_flags.txt
 
-clean:
-	rm -rf build
+.PHONY: clean_build
+clean_build:
+	- rm -rf build
+
+.PHONY: clean
+clean: clean_build
+	- rm compile_flags.txt
