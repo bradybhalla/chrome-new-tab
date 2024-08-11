@@ -3,7 +3,7 @@ CC=emcc
 FLAGS=--use-port=sdl2
 
 OUTPUT_FILE=build/main.js
-SRC=$(wildcard src/*.cpp)
+SRC=$(wildcard src/*.c)
 
 .PHONY: all
 all: build compile_flags.txt
