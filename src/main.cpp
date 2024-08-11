@@ -1,7 +1,6 @@
 #include "grid.hpp"
 #include "utils.hpp"
 #include <SDL2/SDL.h>
-#include <SDL_video.h>
 #include <emscripten.h>
 #include <iostream>
 #include <utility>
