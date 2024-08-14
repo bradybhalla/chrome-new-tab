@@ -1,4 +1,5 @@
 #include "program.h"
+#include "grid.h"
 #include "utils.h"
 #include <SDL2/SDL.h>
 #include <assert.h>
@@ -9,6 +10,8 @@ struct program {
 
   pos_t window_size;
   uint64_t cur_time;
+
+  grid_t *grid;
 };
 
 // helper function to resize the program if needed
@@ -19,23 +22,15 @@ void program_update_resized(program_t *program) {
   if (program->window_size.x != new_size.x ||
       program->window_size.y != new_size.y) {
     program->window_size = new_size;
-    printf("window is resized\n");
   }
 }
 
 // helper function to display the program
 void program_display(program_t *program) {
-  SDL_SetRenderDrawColor(program->renderer, 0, 0, 0, 255);
+  SDL_SetRenderDrawColor(program->renderer, 100, 0, 0, 255);
   SDL_RenderClear(program->renderer);
 
-  SDL_Rect rect;
-  rect.x = 250;
-  rect.y = 150;
-  rect.w = program->cur_time % 1000 / 5.0;
-  rect.h = 200;
-
-  SDL_SetRenderDrawColor(program->renderer, 10, 100, 100, 255);
-  SDL_RenderFillRect(program->renderer, &rect);
+  grid_draw(program->grid, program->renderer, program->window_size);
 
   SDL_RenderPresent(program->renderer);
 }
@@ -54,7 +49,7 @@ program_t *program_init() {
 
   program->cur_time = 0;
 
-  printf("program initialized\n");
+  program->grid = grid_init(301, 301);
 
   return program;
 }
@@ -63,7 +58,6 @@ void program_destroy(program_t *program) {
   SDL_DestroyWindow(program->window);
   SDL_DestroyRenderer(program->renderer);
   free(program);
-  printf("program destroyed\n");
 }
 
 bool program_update(program_t *program, uint64_t time) {
