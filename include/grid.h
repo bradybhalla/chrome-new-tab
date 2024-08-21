@@ -1,10 +1,9 @@
 #ifndef GRID_H
 #define GRID_H
 
-#include "utils.h"
 #include <SDL2/SDL.h>
-#include <stdbool.h>
-#include <stddef.h>
+#include <stdlib.h>
+#include "utils.h"
 
 typedef struct grid grid_t;
 
@@ -15,7 +14,10 @@ grid_t *grid_init(size_t rows, size_t cols);
 void grid_destroy(grid_t* grid);
 
 /* Updates the grid */
-void grid_update(grid_t* grid);
+void grid_update(grid_t* grid, uint64_t time);
+
+/* Set the window in which the grid will update */
+void grid_resize(grid_t *grid, pos_t size);
 
 /* Draw the grid */
 void grid_draw(grid_t* grid, SDL_Renderer* renderer, pos_t window_size);

@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define GRID_CELLS 200
+
 typedef struct program program_t;
 
 /* Create a new program and return a pointer */

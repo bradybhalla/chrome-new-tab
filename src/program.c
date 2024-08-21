@@ -10,6 +10,7 @@ struct program {
 
   pos_t window_size;
   uint64_t cur_time;
+  uint64_t last_grid_update_time;
 
   grid_t *grid;
 };
@@ -22,6 +23,13 @@ void program_update_resized(program_t *program) {
   if (program->window_size.x != new_size.x ||
       program->window_size.y != new_size.y) {
     program->window_size = new_size;
+
+    size_t max_window = max(program->window_size.x, program->window_size.y);
+    max_window = max(max_window, 2000);
+
+    pos_t size = {GRID_CELLS * program->window_size.x / max_window, GRID_CELLS * program->window_size.y / max_window};
+
+    grid_resize(program->grid, size);
   }
 }
 
@@ -43,13 +51,16 @@ program_t *program_init() {
                               &program->renderer);
 
   // set to an impossible size so the values will
-  // change on the first update
+  // change on the first update_resized
   program->window_size.x = -1;
   program->window_size.y = -1;
 
   program->cur_time = 0;
+  program->last_grid_update_time = 0;
 
-  program->grid = grid_init(301, 301);
+  program->grid = grid_init(GRID_CELLS, GRID_CELLS);
+
+  program_update_resized(program);
 
   return program;
 }
@@ -61,7 +72,6 @@ void program_destroy(program_t *program) {
 }
 
 bool program_update(program_t *program, uint64_t time) {
-  uint64_t dt = time - program->cur_time;
   program->cur_time = time;
 
   SDL_Event e;
@@ -79,6 +89,11 @@ bool program_update(program_t *program, uint64_t time) {
   case SDL_WINDOWEVENT:
     program_update_resized(program);
     break;
+  }
+
+  while (program->last_grid_update_time < program->cur_time) {
+    grid_update(program->grid, program->last_grid_update_time);
+    program->last_grid_update_time += 5;
   }
 
   program_display(program);
