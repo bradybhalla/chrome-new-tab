@@ -1,4 +1,5 @@
 #include "grid.h"
+#include "config.h"
 #include "utils.h"
 #include <assert.h>
 #include <stdlib.h>
@@ -14,17 +15,11 @@ struct grid {
   pos_t update_end;
 };
 
+/* private helper function to get a pointer
+ * to the grid cell at a specific position
+ */
 grid_val_t *grid_value(grid_t *grid, pos_t pos) {
   return grid->data + grid->cols * pos.y + pos.x;
-}
-
-void grid_resize(grid_t *grid, pos_t size) {
-  size_t x_offset = (grid->cols - size.x) / 2;
-  size_t y_offset = (grid->rows - size.y) / 2;
-  grid->update_start.x = max(x_offset, 1);
-  grid->update_start.y = max(2 * y_offset, 0);
-  grid->update_end.x = min(grid->cols - x_offset, grid->cols - 1);
-  grid->update_end.y = grid->rows - 1;
 }
 
 grid_t *grid_init(size_t rows, size_t cols) {
@@ -50,10 +45,8 @@ grid_t *grid_init(size_t rows, size_t cols) {
     *grid_value(grid, pos) = BLOCKED;
   }
 
-  grid->update_start.x = 1;
-  grid->update_start.y = 1;
-  grid->update_end.x = cols;
-  grid->update_end.y = rows;
+  pos_t size = {cols, rows};
+  grid_resize(grid, size);
 
   return grid;
 }
@@ -65,8 +58,8 @@ void grid_destroy(grid_t *grid) {
 
 void grid_update(grid_t *grid, uint64_t time) {
 
-  for (int row = grid->update_end.y; row >= grid->update_start.y; row--) {
-    for (int col = grid->update_start.x; col <= grid->update_end.x; col++) {
+  for (int row = grid->update_end.y + 1; row >= grid->update_start.y; row--) {
+    for (int col = grid->update_start.x; col < grid->update_end.x; col++) {
       pos_t pos = {col, row};
 
       grid_val_t *val = grid_value(grid, pos);
@@ -95,7 +88,10 @@ void grid_update(grid_t *grid, uint64_t time) {
     }
   }
 
-  pos_t pos = {time / 1000 * 51 % (grid->cols - 20) + 10,
+  pos_t pos = {grid->update_start.x +
+                   time / 1000 * 51 %
+                       (grid->update_end.x - grid->update_start.x - 10) +
+                   5,
                grid->update_start.y + 1};
   grid_val_t *val = grid_value(grid, pos);
   *val = SAND;
@@ -112,9 +108,11 @@ void grid_draw(grid_t *grid, SDL_Renderer *renderer, pos_t window_size) {
       grid_val_t val = *grid_value(grid, pos);
 
       if (val == SAND) {
-        SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255);
+        SDL_SetRenderDrawColor(renderer, SAND_COLOR_R, SAND_COLOR_G,
+                               SAND_COLOR_B, 255);
       } else if (val == EMPTY) {
-        SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);
+        SDL_SetRenderDrawColor(renderer, EMPTY_COLOR_R, EMPTY_COLOR_G,
+                               EMPTY_COLOR_B, 255);
       } else {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
       }
@@ -128,4 +126,53 @@ void grid_draw(grid_t *grid, SDL_Renderer *renderer, pos_t window_size) {
       SDL_RenderFillRect(renderer, &rect);
     }
   }
+}
+
+void grid_resize(grid_t *grid, pos_t size) {
+  size_t x_offset = (grid->cols - size.x) / 2;
+  size_t y_offset = (grid->rows - size.y) / 2;
+
+  pos_t new_start;
+  new_start.x = max(x_offset, 1);
+  new_start.y = max(2 * y_offset, 0);
+
+  pos_t new_end;
+  new_end.x = min(grid->cols - x_offset, grid->cols - 1);
+  new_end.y = grid->rows - 1;
+
+  size_t min_row = min(new_start.y, grid->update_start.y);
+  size_t max_row = max(new_end.y, grid->update_end.y);
+
+  size_t min_col = min(new_start.x, grid->update_start.x);
+  size_t max_col = max(new_end.x, grid->update_end.x);
+
+  // clear left
+  for (size_t col = max(grid->update_start.x - 1, 1); col < new_start.x;
+       col++) {
+    for (size_t row = min_row; row < max_row; row++) {
+      pos_t pos = {col, row};
+      *grid_value(grid, pos) = EMPTY;
+    }
+  }
+
+  // clear right
+  for (size_t col = new_end.x;
+       col < min(grid->update_end.x + 1, grid->cols - 1); col++) {
+    for (size_t row = min_row; row < max_row; row++) {
+      pos_t pos = {col, row};
+      *grid_value(grid, pos) = EMPTY;
+    }
+  }
+
+  // clear top
+  for (size_t col = min_col; col < max_col; col++) {
+    for (size_t row = grid->update_start.y; row < new_start.y; row++) {
+      pos_t pos = {col, row};
+      *grid_value(grid, pos) = EMPTY;
+    }
+  }
+
+  // set new update window
+  grid->update_start = new_start;
+  grid->update_end = new_end;
 }

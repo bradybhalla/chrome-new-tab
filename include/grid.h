@@ -16,7 +16,7 @@ void grid_destroy(grid_t* grid);
 /* Updates the grid */
 void grid_update(grid_t* grid, uint64_t time);
 
-/* Set the window in which the grid will update */
+/* Change number of cells which are displayed and updated */
 void grid_resize(grid_t *grid, pos_t size);
 
 /* Draw the grid */
