@@ -1,8 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define GRID_ROWS 100
-#define GRID_COLS 200
+#define GRID_ROWS 180
+#define GRID_COLS 320
 
 #define MIN_CELL_SIZE 10
 

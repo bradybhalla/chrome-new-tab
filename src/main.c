@@ -3,6 +3,7 @@
 #include <SDL2/SDL.h>
 #include <assert.h>
 #include <emscripten.h>
+#include <stdbool.h>
 
 typedef struct program {
   SDL_Window *window;
@@ -11,6 +12,7 @@ typedef struct program {
   pos_t window_size;
   uint64_t last_grid_update_time;
 
+  bool grid_initialized;
   grid_t *grid;
 } program_t;
 
@@ -25,14 +27,16 @@ void program_resized(program_t *program) {
 
   program->window_size = new_size;
 
-  size_t cell_size_x = program->window_size.x / GRID_COLS + 1;
-  size_t cell_size_y = program->window_size.y / GRID_ROWS + 1;
-  size_t cell_size = max(max(cell_size_x, cell_size_y), MIN_CELL_SIZE);
+  if (program->grid_initialized) {
+    int cell_size_x = program->window_size.x / GRID_COLS + 1;
+    int cell_size_y = program->window_size.y / GRID_ROWS + 1;
+    int cell_size = max(max(cell_size_x, cell_size_y), MIN_CELL_SIZE);
 
-  pos_t new_grid_size = {program->window_size.x / cell_size,
-                         program->window_size.y / cell_size};
+    pos_t new_grid_size = {program->window_size.x / cell_size,
+                           program->window_size.y / cell_size};
 
-  grid_resize(program->grid, new_grid_size);
+    grid_resize(program->grid, new_grid_size);
+  }
 }
 
 program_t *program_init() {
@@ -48,7 +52,8 @@ program_t *program_init() {
 
   program->last_grid_update_time = 0;
 
-  program->grid = grid_init(GRID_ROWS, GRID_COLS);
+  program->grid_initialized = false;
+  program->grid = NULL;
 
   program_resized(program);
 
@@ -58,8 +63,19 @@ program_t *program_init() {
 void program_destroy(program_t *program) {
   SDL_DestroyWindow(program->window);
   SDL_DestroyRenderer(program->renderer);
-  grid_destroy(program->grid);
+  if (program->grid_initialized) {
+    grid_destroy(program->grid);
+  }
   free(program);
+}
+
+void program_initialize_grid(program_t *program, uint64_t time) {
+  if (!program->grid_initialized) {
+    program->grid = grid_init(GRID_ROWS, GRID_COLS);
+    program->grid_initialized = true;
+    program->last_grid_update_time = time;
+    // TODO: make sure that the grid will be sized correctly
+  }
 }
 
 void loop(void *data) {
@@ -75,6 +91,7 @@ void loop(void *data) {
     return;
   }
   case SDL_KEYDOWN: {
+    program_initialize_grid(program, time);
     break;
   }
   case SDL_KEYUP: {
@@ -86,17 +103,22 @@ void loop(void *data) {
   }
   }
 
-  // update grid
-  while (program->last_grid_update_time < time) {
-    grid_tick(program->grid);
-    program->last_grid_update_time += GRID_UPDATE_MS;
-  }
-
-  // draw grid
   SDL_SetRenderDrawColor(program->renderer, EMPTY_COLOR_R, EMPTY_COLOR_G,
                          EMPTY_COLOR_B, 255);
   SDL_RenderClear(program->renderer);
-  grid_draw(program->grid, program->renderer, program->window_size);
+
+  if (program->grid_initialized) {
+
+    // update grid
+    while (program->last_grid_update_time < time) {
+      grid_tick(program->grid);
+      program->last_grid_update_time += GRID_UPDATE_MS;
+    }
+
+    // draw grid
+    grid_draw(program->grid, program->renderer, program->window_size);
+  }
+
   SDL_RenderPresent(program->renderer);
 }
 

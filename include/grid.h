@@ -8,7 +8,7 @@
 typedef struct grid grid_t;
 
 /* Create a new grid and return a pointer */
-grid_t *grid_init(size_t rows, size_t cols);
+grid_t *grid_init(int rows, int cols);
 
 /* Destroy grid and free all allocated space. */
 void grid_destroy(grid_t* grid);

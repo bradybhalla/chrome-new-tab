@@ -8,7 +8,7 @@ typedef struct {
   int y;
 } pos_t;
 
-size_t max(size_t x, size_t y);
-size_t min(size_t x, size_t y);
+int max(int x, int y);
+int min(int x, int y);
 
 #endif

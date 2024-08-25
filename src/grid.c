@@ -1,14 +1,16 @@
 #include "grid.h"
 #include "config.h"
 #include "utils.h"
+#include <SDL_render.h>
 #include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
 
 typedef enum { EMPTY = 0, SAND } grid_val_t;
 
 struct grid {
-  size_t rows;
-  size_t cols;
+  int rows;
+  int cols;
   grid_val_t *data;
 
   pos_t update_start;
@@ -31,7 +33,7 @@ grid_val_t *grid_value(grid_t *grid, pos_t pos) {
   return grid->data + grid->cols * pos.y + pos.x;
 }
 
-grid_t *grid_init(size_t rows, size_t cols) {
+grid_t *grid_init(int rows, int cols) {
   grid_t *grid = malloc(sizeof(grid_t));
   assert(grid != NULL);
 
@@ -106,40 +108,69 @@ void grid_tick(grid_t *grid) {
   grid->tick_count++;
 }
 
+void draw_row_rect(SDL_Renderer *renderer, SDL_Rect rect, grid_val_t type) {
+  if (type == SAND) {
+    SDL_SetRenderDrawColor(renderer, SAND_COLOR_R, SAND_COLOR_G, SAND_COLOR_B,
+                           255);
+  } else if (type == EMPTY) {
+    SDL_SetRenderDrawColor(renderer, EMPTY_COLOR_R, EMPTY_COLOR_G,
+                           EMPTY_COLOR_B, 255);
+  } else {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  }
+
+  SDL_RenderFillRect(renderer, &rect);
+}
+
 void grid_draw(grid_t *grid, SDL_Renderer *renderer, pos_t window_size) {
+  // rectangles are extended along a row as far as possible
+  // before drawing
+  bool rect_exists = false;
+  grid_val_t rect_current_type;
+  int rect_cell_count = 0;
+  SDL_Rect rect;
+
   int num_cols = grid->update_end.x - grid->update_start.x;
   int num_rows = grid->update_end.y - grid->update_start.y;
 
-  for (size_t r = 0; r < num_rows; r++) {
-    for (size_t c = 0; c < num_cols; c++) {
+  for (int r = 0; r < num_rows; r++) {
+    rect_exists = false;
+
+    for (int c = 0; c < num_cols; c++) {
       pos_t pos = {grid->update_start.x + c, grid->update_start.y + r};
+      grid_val_t val = *grid_value(grid, pos);
 
-      grid_val_t *val = grid_value(grid, pos);
+      if (rect_exists && val != rect_current_type) {
+        // draw rectangle if the current cell is a different type
+        rect.w = window_size.x * rect_cell_count / num_cols + 2;
+        rect.h = window_size.y / num_rows + 2;
 
-      if (*val == SAND) {
-        SDL_SetRenderDrawColor(renderer, SAND_COLOR_R, SAND_COLOR_G,
-                               SAND_COLOR_B, 255);
-      } else if (*val == EMPTY) {
-        SDL_SetRenderDrawColor(renderer, EMPTY_COLOR_R, EMPTY_COLOR_G,
-                               EMPTY_COLOR_B, 255);
-      } else {
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        draw_row_rect(renderer, rect, rect_current_type);
+
+        rect_exists = false;
       }
 
-      SDL_Rect rect;
-      rect.x = c * window_size.x / num_cols - 1;
-      rect.y = r * window_size.y / num_rows - 1;
-      rect.w = window_size.x / num_cols + 2;
-      rect.h = window_size.y / num_rows + 2;
-
-      SDL_RenderFillRect(renderer, &rect);
+      if (!rect_exists) {
+        // start new rect if there is not one that exists
+        rect.x = c * window_size.x / num_cols - 1;
+        rect.y = r * window_size.y / num_rows - 1;
+        rect_cell_count = 0;
+        rect_exists = true;
+        rect_current_type = val;
+      }
+      rect_cell_count++;
     }
+
+    // draw last rect in row
+    rect.w = window_size.x * rect_cell_count / num_cols + 2;
+    rect.h = window_size.y / num_rows + 2;
+    draw_row_rect(renderer, rect, rect_current_type);
   }
 }
 
 void grid_resize(grid_t *grid, pos_t size) {
-  size_t x_offset = (grid->cols - size.x) / 2;
-  size_t y_offset = (grid->rows - size.y) / 2;
+  int x_offset = (grid->cols - size.x) / 2;
+  int y_offset = (grid->rows - size.y) / 2;
 
   pos_t new_start;
   new_start.x = x_offset;
@@ -149,31 +180,25 @@ void grid_resize(grid_t *grid, pos_t size) {
   new_end.x = grid->cols - x_offset;
   new_end.y = grid->rows;
 
-  size_t min_row = min(new_start.y, grid->update_start.y);
-  size_t max_row = max(new_end.y, grid->update_end.y);
-
-  size_t min_col = min(new_start.x, grid->update_start.x);
-  size_t max_col = max(new_end.x, grid->update_end.x);
-
   // clear left
-  for (size_t col = grid->update_start.x; col < new_start.x; col++) {
-    for (size_t row = grid->update_start.y; row < grid->update_end.y; row++) {
+  for (int col = grid->update_start.x; col < new_start.x; col++) {
+    for (int row = grid->update_start.y; row < grid->update_end.y; row++) {
       pos_t pos = {col, row};
       *grid_value(grid, pos) = EMPTY;
     }
   }
 
   // clear right
-  for (size_t col = new_end.x; col < grid->update_end.x; col++) {
-    for (size_t row = grid->update_start.y; row < grid->update_end.y; row++) {
+  for (int col = new_end.x; col < grid->update_end.x; col++) {
+    for (int row = grid->update_start.y; row < grid->update_end.y; row++) {
       pos_t pos = {col, row};
       *grid_value(grid, pos) = EMPTY;
     }
   }
 
   // clear top
-  for (size_t col = grid->update_start.x; col < grid->update_end.x; col++) {
-    for (size_t row = grid->update_start.y; row < new_start.y; row++) {
+  for (int col = grid->update_start.x; col < grid->update_end.x; col++) {
+    for (int row = grid->update_start.y; row < new_start.y; row++) {
       pos_t pos = {col, row};
       *grid_value(grid, pos) = EMPTY;
     }
