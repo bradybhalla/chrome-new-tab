@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-typedef enum { EMPTY = 0, SAND, BLOCKED } grid_val_t;
+typedef enum { EMPTY = 0, SAND } grid_val_t;
 
 struct grid {
   size_t rows;
@@ -13,12 +13,21 @@ struct grid {
 
   pos_t update_start;
   pos_t update_end;
+
+  int tick_count;
 };
 
 /* private helper function to get a pointer
- * to the grid cell at a specific position
+ * to the grid cell at a specific position.
+ * Returns NULL when the position is outside
+ * of the update range.
  */
 grid_val_t *grid_value(grid_t *grid, pos_t pos) {
+  if (pos.x < grid->update_start.x || pos.x >= grid->update_end.x ||
+      pos.y < grid->update_start.y || pos.y >= grid->update_end.y) {
+    return NULL;
+  }
+
   return grid->data + grid->cols * pos.y + pos.x;
 }
 
@@ -32,18 +41,7 @@ grid_t *grid_init(size_t rows, size_t cols) {
   grid->data = calloc(rows * cols, sizeof(grid_val_t));
   assert(grid->data != NULL);
 
-  for (size_t i = 0; i < cols; i++) {
-    pos_t pos = {i, rows - 1};
-    *grid_value(grid, pos) = BLOCKED;
-  }
-  for (size_t i = 0; i < rows; i++) {
-    pos_t pos = {0, i};
-    *grid_value(grid, pos) = BLOCKED;
-  }
-  for (size_t i = 0; i < rows; i++) {
-    pos_t pos = {cols - 1, i};
-    *grid_value(grid, pos) = BLOCKED;
-  }
+  grid->tick_count = 0;
 
   pos_t size = {cols, rows};
   grid_resize(grid, size);
@@ -56,10 +54,19 @@ void grid_destroy(grid_t *grid) {
   free(grid);
 }
 
-void grid_update(grid_t *grid, uint64_t time) {
+void grid_tick(grid_t *grid) {
 
-  for (int row = grid->update_end.y + 1; row >= grid->update_start.y; row--) {
-    for (int col = grid->update_start.x; col < grid->update_end.x; col++) {
+  for (int r = 0; r < grid->update_end.y - grid->update_start.y; r++) {
+    for (int c = 0; c < grid->update_end.x - grid->update_start.x; c++) {
+      int row = grid->update_end.y - 1 - r; // rows from top to bottom
+
+      // col direction depends on the row for symmetry
+      int col;
+      if (row % 2 == 0) {
+        col = grid->update_start.x + c;
+      } else {
+        col = grid->update_end.x - 1 - c;
+      }
       pos_t pos = {col, row};
 
       grid_val_t *val = grid_value(grid, pos);
@@ -75,13 +82,14 @@ void grid_update(grid_t *grid, uint64_t time) {
       pos.x = col + 1;
       grid_val_t *right = grid_value(grid, pos);
 
-      if (*center == EMPTY) {
+      if (center != NULL && *center == EMPTY) {
+        // always prioritize an empty spot directly below
         *center = SAND;
         *val = EMPTY;
-      } else if (*left == EMPTY) {
+      } else if (left != NULL && *left == EMPTY) {
         *left = SAND;
         *val = EMPTY;
-      } else if (*right == EMPTY) {
+      } else if (right != NULL && *right == EMPTY) {
         *right = SAND;
         *val = EMPTY;
       }
@@ -89,12 +97,13 @@ void grid_update(grid_t *grid, uint64_t time) {
   }
 
   pos_t pos = {grid->update_start.x +
-                   time / 1000 * 51 %
-                       (grid->update_end.x - grid->update_start.x - 10) +
-                   5,
+                   ((grid->tick_count / 100) * 991 %
+                    (grid->update_end.x - grid->update_start.x)),
                grid->update_start.y + 1};
   grid_val_t *val = grid_value(grid, pos);
   *val = SAND;
+
+  grid->tick_count++;
 }
 
 void grid_draw(grid_t *grid, SDL_Renderer *renderer, pos_t window_size) {
@@ -105,12 +114,12 @@ void grid_draw(grid_t *grid, SDL_Renderer *renderer, pos_t window_size) {
     for (size_t c = 0; c < num_cols; c++) {
       pos_t pos = {grid->update_start.x + c, grid->update_start.y + r};
 
-      grid_val_t val = *grid_value(grid, pos);
+      grid_val_t *val = grid_value(grid, pos);
 
-      if (val == SAND) {
+      if (*val == SAND) {
         SDL_SetRenderDrawColor(renderer, SAND_COLOR_R, SAND_COLOR_G,
                                SAND_COLOR_B, 255);
-      } else if (val == EMPTY) {
+      } else if (*val == EMPTY) {
         SDL_SetRenderDrawColor(renderer, EMPTY_COLOR_R, EMPTY_COLOR_G,
                                EMPTY_COLOR_B, 255);
       } else {
@@ -133,12 +142,12 @@ void grid_resize(grid_t *grid, pos_t size) {
   size_t y_offset = (grid->rows - size.y) / 2;
 
   pos_t new_start;
-  new_start.x = max(x_offset, 1);
-  new_start.y = max(2 * y_offset, 0);
+  new_start.x = x_offset;
+  new_start.y = 2 * y_offset;
 
   pos_t new_end;
-  new_end.x = min(grid->cols - x_offset, grid->cols - 1);
-  new_end.y = grid->rows - 1;
+  new_end.x = grid->cols - x_offset;
+  new_end.y = grid->rows;
 
   size_t min_row = min(new_start.y, grid->update_start.y);
   size_t max_row = max(new_end.y, grid->update_end.y);
@@ -147,25 +156,23 @@ void grid_resize(grid_t *grid, pos_t size) {
   size_t max_col = max(new_end.x, grid->update_end.x);
 
   // clear left
-  for (size_t col = max(grid->update_start.x - 1, 1); col < new_start.x;
-       col++) {
-    for (size_t row = min_row; row < max_row; row++) {
+  for (size_t col = grid->update_start.x; col < new_start.x; col++) {
+    for (size_t row = grid->update_start.y; row < grid->update_end.y; row++) {
       pos_t pos = {col, row};
       *grid_value(grid, pos) = EMPTY;
     }
   }
 
   // clear right
-  for (size_t col = new_end.x;
-       col < min(grid->update_end.x + 1, grid->cols - 1); col++) {
-    for (size_t row = min_row; row < max_row; row++) {
+  for (size_t col = new_end.x; col < grid->update_end.x; col++) {
+    for (size_t row = grid->update_start.y; row < grid->update_end.y; row++) {
       pos_t pos = {col, row};
       *grid_value(grid, pos) = EMPTY;
     }
   }
 
   // clear top
-  for (size_t col = min_col; col < max_col; col++) {
+  for (size_t col = grid->update_start.x; col < grid->update_end.x; col++) {
     for (size_t row = grid->update_start.y; row < new_start.y; row++) {
       pos_t pos = {col, row};
       *grid_value(grid, pos) = EMPTY;

@@ -1,6 +1,6 @@
 CC=emcc
 
-FLAGS=--use-port=sdl2 -I include -sALLOW_MEMORY_GROWTH -gsource-map
+FLAGS=--use-port=sdl2 -I include -gsource-map
 
 OUTPUT_FILE=build/main.js
 SRC=$(wildcard src/*.c)

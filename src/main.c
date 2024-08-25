@@ -9,7 +9,6 @@ typedef struct program {
   SDL_Renderer *renderer;
 
   pos_t window_size;
-  uint64_t cur_time;
   uint64_t last_grid_update_time;
 
   grid_t *grid;
@@ -47,7 +46,6 @@ program_t *program_init() {
   program->window_size.x = -1;
   program->window_size.y = -1;
 
-  program->cur_time = 0;
   program->last_grid_update_time = 0;
 
   program->grid = grid_init(GRID_ROWS, GRID_COLS);
@@ -67,7 +65,7 @@ void program_destroy(program_t *program) {
 void loop(void *data) {
   program_t *program = (program_t *)(data);
 
-  program->cur_time = SDL_GetTicks64();
+  uint64_t time = SDL_GetTicks64();
 
   // handle events
   SDL_Event e;
@@ -89,9 +87,9 @@ void loop(void *data) {
   }
 
   // update grid
-  while (program->last_grid_update_time < program->cur_time) {
-    grid_update(program->grid, program->last_grid_update_time);
-    program->last_grid_update_time += 5;
+  while (program->last_grid_update_time < time) {
+    grid_tick(program->grid);
+    program->last_grid_update_time += GRID_UPDATE_MS;
   }
 
   // draw grid

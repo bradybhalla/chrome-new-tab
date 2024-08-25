@@ -14,7 +14,7 @@ grid_t *grid_init(size_t rows, size_t cols);
 void grid_destroy(grid_t* grid);
 
 /* Updates the grid */
-void grid_update(grid_t* grid, uint64_t time);
+void grid_tick(grid_t* grid);
 
 /* Change number of cells which are displayed and updated */
 void grid_resize(grid_t *grid, pos_t size);
