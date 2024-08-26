@@ -6,9 +6,9 @@ A simple falling sand simulation written in C and compiled to WebAssembly. This 
 
 ## Install
 
-Download the latest release from this repository. Open [chrome://extensions/](chrome://extensions/) and turn on "Developer mode". Click the "Load unpacked" button at the top left of the screen and choose the downloaded folder. Note that this will only work in Chrome.
+Download and unzip "dist.zip" from the latest release in this repository. Open [chrome://extensions/](chrome://extensions/) and turn on "Developer mode". Click the "Load unpacked" button at the top left of the screen and choose the downloaded folder. Note that this will only work in Chrome.
 
-To run this project without loading it as a Chrome extension, open the "index.html" file in the downloaded release. This will have to be done through a local server due to CORS policy.
+To run this project without loading it as a Chrome extension, open the "index.html" file from the downloaded folder. This will have to be done through a local server due to CORS policy.
 
 ## Usage
 
