@@ -2,7 +2,7 @@
 
 A simple falling sand simulation written in C and compiled to WebAssembly. This can be used as a new tab page in Google Chrome.
 
-![Image of simulation](images/falling-sand.png)
+![Image of simulation](images/falling-sand.gif)
 
 ## Install
 
