@@ -1,25 +1,27 @@
 CC=emcc
 
-FLAGS=--use-port=sdl2 -I include -gsource-map
+FLAGS=--use-port=sdl2 -I include -gsource-map -O3
 
-OUTPUT_FILE=build/main.js
 SRC=$(wildcard src/*.c)
+STATIC_DIST_FILES=index.html index.js manifest.json
 
 .PHONY: all
-all: build compile_flags.txt
+all: dist compile_flags.txt
 
-.PHONY: build
+dist: build
+	- mkdir dist
+	- cp -r build/ dist/build/
+	- cp $(STATIC_DIST_FILES) dist/
+
 build: $(SRC)
-	@mkdir -p $(shell dirname $(OUTPUT_FILE))
-	$(CC) $(FLAGS) -o $(OUTPUT_FILE) $(SRC)
+	- mkdir build
+	$(CC) $(FLAGS) -o build/main.js $(SRC)
 
 compile_flags.txt:
 	$(CC) $(FLAGS) --cflags | sed 's/ /\n/g' > compile_flags.txt
 
-.PHONY: clean_build
-clean_build:
-	- rm -rf build
-
 .PHONY: clean
-clean: clean_build
+clean:
+	- rm -rf build
+	- rm -rf dist
 	- rm compile_flags.txt

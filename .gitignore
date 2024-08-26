@@ -1,4 +1,5 @@
 .DS_Store
 compile_flags.txt
 build/
+dist/
 emsdk/
