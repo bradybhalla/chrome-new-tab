@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+// possible contents of a grid cell
 typedef enum { EMPTY = 0, SAND } grid_val_t;
 
 struct grid {
@@ -16,14 +17,12 @@ struct grid {
 
   pos_t update_start;
   pos_t update_end;
-
-  int tick_count;
 };
 
-/* private helper function to get a pointer
- * to the grid cell at a specific position.
- * Returns NULL when the position is outside
- * of the update range.
+/* helper function to get a pointer to the
+ * grid cell at a specific position. Returns
+ * NULL when the position is outside of the
+ * update range.
  */
 grid_val_t *grid_value(grid_t *grid, pos_t pos) {
   if (pos.x < grid->update_start.x || pos.x >= grid->update_end.x ||
@@ -41,14 +40,18 @@ grid_t *grid_init(int rows, int cols) {
   grid->rows = rows;
   grid->cols = cols;
 
+  // initialize data to 0 (EMPTY)
   grid->data = calloc(rows * cols, sizeof(grid_val_t));
   assert(grid->data != NULL);
 
-  grid->tick_count = 0;
+  grid->update_start.x = 0;
+  grid->update_start.y = 0;
+  grid->update_end.x = cols;
+  grid->update_end.y = rows;
 
-  pos_t size = {cols, rows};
-  grid_resize(grid, size);
-
+  // random seed so sand falls
+  // from different places each
+  // time the program runs
   srand(time(NULL));
 
   return grid;
@@ -79,6 +82,7 @@ void grid_tick(grid_t *grid) {
         continue;
       }
 
+      // place sand at the location it should move to
       pos.y = row + 1;
       pos.x = col - 1;
       grid_val_t *left = grid_value(grid, pos);
@@ -88,7 +92,6 @@ void grid_tick(grid_t *grid) {
       grid_val_t *right = grid_value(grid, pos);
 
       if (center != NULL && *center == EMPTY) {
-        // always prioritize an empty spot directly below
         *center = SAND;
         *val = EMPTY;
       } else if (left != NULL && *left == EMPTY) {
@@ -100,8 +103,6 @@ void grid_tick(grid_t *grid) {
       }
     }
   }
-
-  grid->tick_count++;
 }
 
 void draw_row_rect(SDL_Renderer *renderer, SDL_Rect rect, grid_val_t type) {
@@ -130,19 +131,17 @@ void grid_draw(grid_t *grid, SDL_Renderer *renderer, pos_t window_size) {
   int num_rows = grid->update_end.y - grid->update_start.y;
 
   for (int r = 0; r < num_rows; r++) {
-    rect_exists = false;
-
     for (int c = 0; c < num_cols; c++) {
       pos_t pos = {grid->update_start.x + c, grid->update_start.y + r};
+
+      // we know this will be in the update range so dereference is safe
       grid_val_t val = *grid_value(grid, pos);
 
       if (rect_exists && val != rect_current_type) {
         // draw rectangle if the current cell is a different type
         rect.w = window_size.x * rect_cell_count / num_cols + 2;
         rect.h = window_size.y / num_rows + 2;
-
         draw_row_rect(renderer, rect, rect_current_type);
-
         rect_exists = false;
       }
 
@@ -154,6 +153,8 @@ void grid_draw(grid_t *grid, SDL_Renderer *renderer, pos_t window_size) {
         rect_exists = true;
         rect_current_type = val;
       }
+
+      // extend the rectangle one cell
       rect_cell_count++;
     }
 
@@ -161,10 +162,14 @@ void grid_draw(grid_t *grid, SDL_Renderer *renderer, pos_t window_size) {
     rect.w = window_size.x * rect_cell_count / num_cols + 2;
     rect.h = window_size.y / num_rows + 2;
     draw_row_rect(renderer, rect, rect_current_type);
+    rect_exists = false;
   }
 }
 
 void grid_resize(grid_t *grid, pos_t size) {
+  // calculate new positions such that the visible
+  // window is centered horizontally and reaches
+  // the bottom of the grid vertically
   int x_offset = (grid->cols - size.x) / 2;
   int y_offset = (grid->rows - size.y) / 2;
 
@@ -176,27 +181,36 @@ void grid_resize(grid_t *grid, pos_t size) {
   new_end.x = grid->cols - x_offset;
   new_end.y = grid->rows;
 
-  // clear left
+  // clear new space to the left
   for (int col = grid->update_start.x; col < new_start.x; col++) {
     for (int row = grid->update_start.y; row < grid->update_end.y; row++) {
       pos_t pos = {col, row};
-      *grid_value(grid, pos) = EMPTY;
+      grid_val_t *val = grid_value(grid, pos);
+      if (val != NULL) {
+        *val = EMPTY;
+      }
     }
   }
 
-  // clear right
+  // clear new space to the right
   for (int col = new_end.x; col < grid->update_end.x; col++) {
     for (int row = grid->update_start.y; row < grid->update_end.y; row++) {
       pos_t pos = {col, row};
-      *grid_value(grid, pos) = EMPTY;
+      grid_val_t *val = grid_value(grid, pos);
+      if (val != NULL) {
+        *val = EMPTY;
+      }
     }
   }
 
-  // clear top
+  // clear new space to the top
   for (int col = grid->update_start.x; col < grid->update_end.x; col++) {
     for (int row = grid->update_start.y; row < new_start.y; row++) {
       pos_t pos = {col, row};
-      *grid_value(grid, pos) = EMPTY;
+      grid_val_t *val = grid_value(grid, pos);
+      if (val != NULL) {
+        *val = EMPTY;
+      }
     }
   }
 
@@ -229,6 +243,7 @@ void grid_remove_sand(grid_t *grid) {
 
       grid_val_t *val = grid_value(grid, pos);
       if (val != NULL && (rand() & 2) == 0) {
+        // each cell has a 50% chance of becoming empty
         *val = EMPTY;
       }
     }

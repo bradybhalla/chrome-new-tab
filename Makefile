@@ -3,7 +3,7 @@ CC=emcc
 FLAGS=--use-port=sdl2 -I include -gsource-map -O3
 
 SRC=$(wildcard src/*.c)
-STATIC_DIST_FILES=index.html index.js manifest.json
+STATIC_DIST_FILES=$(wildcard static/*)
 
 .PHONY: all
 all: dist compile_flags.txt

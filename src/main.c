@@ -15,7 +15,8 @@ typedef struct program {
   grid_t *grid;
 } program_t;
 
-bool program_size_changed(program_t *program) {
+/* Check if the window size has changed */
+bool program_window_size_changed(program_t *program) {
   pos_t new_size;
   SDL_GetWindowSize(program->window, &new_size.x, &new_size.y);
 
@@ -23,7 +24,11 @@ bool program_size_changed(program_t *program) {
          program->window_size.y != new_size.y;
 }
 
-void program_resized(program_t *program) {
+
+int max(int x, int y) { return x >= y ? x : y; }
+
+/* Resize the program to match the current window size */
+void program_resize(program_t *program) {
   SDL_GetWindowSize(program->window, &program->window_size.x,
                     &program->window_size.y);
 
@@ -39,6 +44,7 @@ void program_resized(program_t *program) {
   }
 }
 
+/* Allocate the program data */
 program_t *program_init() {
   program_t *program = malloc(sizeof(program_t));
   assert(program != NULL);
@@ -50,11 +56,12 @@ program_t *program_init() {
 
   program->grid = NULL;
 
-  program_resized(program);
+  program_resize(program);
 
   return program;
 }
 
+/* Free the program data */
 void program_destroy(program_t *program) {
   SDL_DestroyWindow(program->window);
   SDL_DestroyRenderer(program->renderer);
@@ -64,54 +71,75 @@ void program_destroy(program_t *program) {
   free(program);
 }
 
+/* Initialize the grid. This is not done immediately to
+ * save time and space
+ */
 void program_initialize_grid(program_t *program, uint64_t time) {
-  if (program->grid == NULL) {
-    program->grid = grid_init(GRID_ROWS, GRID_COLS);
-    program->last_grid_update_time = time;
-    program_resized(program);
-  }
+  program->grid = grid_init(GRID_ROWS, GRID_COLS);
+  program->last_grid_update_time = time;
+  program_resize(program);
 }
 
+/* Main loop of the program */
 void loop(void *data) {
   program_t *program = (program_t *)(data);
-
   uint64_t time = SDL_GetTicks64();
+
+  // if it has been a long time since the last update,
+  // skip to the current time. This prevents a delay
+  // after a tab is out of focus.
+  if (time - program->last_grid_update_time > 500) {
+    program->last_grid_update_time = time;
+  }
 
   // handle events
   SDL_Event e;
   while (SDL_PollEvent(&e) == 1) {
     switch (e.type) {
     case SDL_QUIT: {
+      // quit event shouldn't happen in the browser
       return;
     }
     case SDL_KEYDOWN: {
-      program_initialize_grid(program, time);
-      if (e.key.keysym.sym != SDLK_BACKSPACE) {
-        grid_add_sand(program->grid);
-      } else {
-        grid_remove_sand(program->grid);
+      // only run if modifiers are not pressed
+      if ((e.key.keysym.mod & (KMOD_CTRL | KMOD_ALT | KMOD_GUI)) == 0) {
+
+        // initialize the grid if needed
+        if (program->grid == NULL) {
+          program_initialize_grid(program, time);
+        }
+
+        // remove sand if backspace or escape are
+        // pressed, otherwise add sand
+        if (e.key.keysym.sym == SDLK_BACKSPACE ||
+            e.key.keysym.sym == SDLK_ESCAPE) {
+          grid_remove_sand(program->grid);
+        } else {
+          grid_add_sand(program->grid);
+        }
       }
       break;
     }
     case SDL_WINDOWEVENT: {
-      if (program_size_changed(program)) {
-        program_resized(program);
+      // resize the window if needed
+      if (program_window_size_changed(program)) {
+        program_resize(program);
       }
       break;
     }
     }
   }
 
+  // clear screen
   SDL_SetRenderDrawColor(program->renderer, EMPTY_COLOR_R, EMPTY_COLOR_G,
                          EMPTY_COLOR_B, 255);
   SDL_RenderClear(program->renderer);
 
   if (program->grid != NULL) {
-
     // update grid
     while (program->last_grid_update_time < time) {
       grid_tick(program->grid);
-      program->last_grid_update_time += GRID_UPDATE_MS;
+      program->last_grid_update_time += GRID_TICK_MS;
     }
 
     // draw grid
@@ -126,6 +154,7 @@ int main(int argc, char **argv) {
 
   program_t *program = program_init();
 
+  // run the main loop with program data
   emscripten_set_main_loop_arg(loop, program, 0, true);
 
   program_destroy(program);
