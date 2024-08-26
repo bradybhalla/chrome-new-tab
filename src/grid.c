@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <time.h>
 
 typedef enum { EMPTY = 0, SAND } grid_val_t;
 
@@ -47,6 +48,8 @@ grid_t *grid_init(int rows, int cols) {
 
   pos_t size = {cols, rows};
   grid_resize(grid, size);
+
+  srand(time(NULL));
 
   return grid;
 }
@@ -97,13 +100,6 @@ void grid_tick(grid_t *grid) {
       }
     }
   }
-
-  pos_t pos = {grid->update_start.x +
-                   ((grid->tick_count / 100) * 991 %
-                    (grid->update_end.x - grid->update_start.x)),
-               grid->update_start.y + 1};
-  grid_val_t *val = grid_value(grid, pos);
-  *val = SAND;
 
   grid->tick_count++;
 }
@@ -207,4 +203,34 @@ void grid_resize(grid_t *grid, pos_t size) {
   // set new update window
   grid->update_start = new_start;
   grid->update_end = new_end;
+}
+
+void grid_add_sand(grid_t *grid) {
+  pos_t rel_pos = {rand() % (grid->update_end.x - grid->update_start.x - 8) + 4,
+                   4};
+
+  for (int r = -4; r <= 4; r++) {
+    for (int c = -4; c <= 4; c++) {
+      pos_t pos = {rel_pos.x + c + grid->update_start.x,
+                   rel_pos.y + r + grid->update_start.y};
+
+      grid_val_t *val = grid_value(grid, pos);
+      if (val != NULL) {
+        *val = SAND;
+      }
+    }
+  }
+}
+
+void grid_remove_sand(grid_t *grid) {
+  for (int row = grid->update_start.y; row < grid->update_end.y; row++) {
+    for (int col = grid->update_start.x; col < grid->update_end.x; col++) {
+      pos_t pos = {col, row};
+
+      grid_val_t *val = grid_value(grid, pos);
+      if (val != NULL && (rand() & 2) == 0) {
+        *val = EMPTY;
+      }
+    }
+  }
 }

@@ -22,4 +22,10 @@ void grid_resize(grid_t *grid, pos_t size);
 /* Draw the grid */
 void grid_draw(grid_t* grid, SDL_Renderer* renderer, pos_t window_size);
 
+/* Add sand randomly */
+void grid_add_sand(grid_t *grid);
+
+/* Remove sand randomly */
+void grid_remove_sand(grid_t *grid);
+
 #endif
