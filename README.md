@@ -2,6 +2,8 @@
 
 A simple falling sand simulation written in C and compiled to WebAssembly. This can be used as a new tab page in Google Chrome.
 
+![Image of simulation](images/falling-sand.png)
+
 ## Install
 
 Download the latest release from this repository. Open [chrome://extensions/](chrome://extensions/) and turn on "Developer mode". Click the "Load unpacked" button at the top left of the screen and choose the downloaded folder. Note that this will only work in Chrome.
