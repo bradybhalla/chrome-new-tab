@@ -9,11 +9,15 @@ A simple falling sand simulation written in C and compiled to WebAssembly. This 
 Press almost any key to make sand randomly fall from the top of the screen. When escape or backspace are pressed, around half of the sand will disappear. When the window is resized, the sand will adjust to match the new size.
 
 # Installation
+
 ## Google Chrome
 Download "dist-chrome.zip" from the latest release and unzip the file. Go to "chrome://extensions", turn on "Developer mode", and click "Load unpacked". Then select the unzipped directory.
 
 ## Firefox (Developer Edition only)
 Download "dist-firefox.zip" from the latest release. The requirement for signed add-ons needs to be turned off in order to allow this add-on to persist. To do this, go to "about:config", and set `xpinstall.signatures.required` to `false`. Finally, go to "about:addons" and drag the zip file into the page.
+
+## Run without installing
+Open the "index.html" file from any distribution directory. Note that this will need to be done using a server due to CORS policy (for example, run `python3 -m http.server`).
 
 # Building from source
 
