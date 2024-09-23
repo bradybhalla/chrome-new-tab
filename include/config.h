@@ -12,13 +12,13 @@
 #define GRID_TICK_MS 5
 
 // color of the empty grid
-#define EMPTY_COLOR_R 53
-#define EMPTY_COLOR_G 54
-#define EMPTY_COLOR_B 58
+#define EMPTY_COLOR_R 30
+#define EMPTY_COLOR_G 30
+#define EMPTY_COLOR_B 46
 
 // color of the sand
-#define SAND_COLOR_R 102
-#define SAND_COLOR_G 102
-#define SAND_COLOR_B 102
+#define SAND_COLOR_R 147
+#define SAND_COLOR_G 153
+#define SAND_COLOR_B 178
 
 #endif
